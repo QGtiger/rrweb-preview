@@ -31,6 +31,9 @@ devDependencies:
   '@rrweb/types':
     specifier: 2.0.0-alpha.17
     version: 2.0.0-alpha.17
+  '@types/node':
+    specifier: ^22.10.0
+    version: 22.10.0
   '@types/react':
     specifier: ^18.3.12
     version: 18.3.12
@@ -69,7 +72,7 @@ devDependencies:
     version: 8.16.0(eslint@9.15.0)(typescript@5.6.3)
   vite:
     specifier: ^6.0.1
-    version: 6.0.1
+    version: 6.0.1(@types/node@22.10.0)
 
 packages:
 
@@ -1054,6 +1057,12 @@ packages:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
     dev: true
 
+  /@types/node@22.10.0:
+    resolution: {integrity: sha512-XC70cRZVElFHfIUB40FgZOBbgJYFKKMa5nb9lxcwYstFG/Mi+/Y0bGS+rs6Dmhmkpq4pnNiLiuZAbc02YCOnmA==}
+    dependencies:
+      undici-types: 6.20.0
+    dev: true
+
   /@types/prop-types@15.7.13:
     resolution: {integrity: sha512-hCZTSvwbzWGvhqxp/RqVqwU999pBf2vp7hzIjiYOsl8wqOmUxkQ6ddw1cV3l8811+kdUFus/q4d1Y3E3SyEifA==}
     dev: true
@@ -1213,7 +1222,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.25.9(@babel/core@7.26.0)
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.2
-      vite: 6.0.1
+      vite: 6.0.1(@types/node@22.10.0)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -3219,6 +3228,10 @@ packages:
     hasBin: true
     dev: true
 
+  /undici-types@6.20.0:
+    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
+    dev: true
+
   /update-browserslist-db@1.1.1(browserslist@4.24.2):
     resolution: {integrity: sha512-R8UzCaa9Az+38REPiJ1tXlImTJXlVfgHZsglwBD/k6nj76ctsH1E3q4doGrukiLQd3sGQYu56r5+lo5r94l29A==}
     hasBin: true
@@ -3251,7 +3264,7 @@ packages:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
     dev: true
 
-  /vite@6.0.1:
+  /vite@6.0.1(@types/node@22.10.0):
     resolution: {integrity: sha512-Ldn6gorLGr4mCdFnmeAOLweJxZ34HjKnDm4HGo6P66IEqTxQb36VEdFJQENKxWjupNfoIjvRUnswjn1hpYEpjQ==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -3291,6 +3304,7 @@ packages:
       yaml:
         optional: true
     dependencies:
+      '@types/node': 22.10.0
       esbuild: 0.24.0
       postcss: 8.4.49
       rollup: 4.27.4
