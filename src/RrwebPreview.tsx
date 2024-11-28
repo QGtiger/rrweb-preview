@@ -135,6 +135,15 @@ function LeftPane() {
     }
   }, [url, urlMap, opt, fileUidMap, fileUid, setPanelEvents]);
 
+  useEffect(() => {
+    const { search } = location;
+    const searchParams = new URLSearchParams(search);
+    const url = searchParams.get("url");
+    if (url) {
+      loadUrl(url);
+    }
+  }, [location.search]);
+
   return (
     <div className="p-4">
       <Segmented<string>
