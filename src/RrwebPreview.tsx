@@ -2,6 +2,7 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -10,12 +11,22 @@ import {
 } from "react";
 
 import { eventWithTime } from "@rrweb/types";
-import { Button, Input, message, Segmented, Space, Upload } from "antd";
-import { readFile } from "./utils";
+import {
+  Button,
+  Input,
+  InputRef,
+  message,
+  Result,
+  Segmented,
+  Space,
+  Upload,
+} from "antd";
+import { areEventsValid, readFile } from "./utils";
 import classNames from "classnames";
 
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 
 const Store = createContext<{
   events: eventWithTime[];
@@ -30,7 +41,13 @@ function StoreProvide({ children }: { children: React.ReactNode }) {
   const _evnets = useMemo(() => {
     return {
       events,
-      setEvents,
+      setEvents: (events: eventWithTime[]) => {
+        if (areEventsValid(events)) {
+          setEvents(events);
+        } else {
+          message.error("无效的rrweb录制文件");
+        }
+      },
     };
   }, [events, setEvents]);
 
@@ -56,16 +73,32 @@ const options: Option[] = [
 ];
 
 function LeftPane() {
-  const [opt, setOpt] = useState<OptionType>("file");
+  const [opt, setOpt] = useState<OptionType>("url");
   const [fileUid, setFileUid] = useState<string | null>(null);
   const { setEvents } = useContext(Store);
   const [url, setUrl] = useState<string>("");
+  const [urlMap, setUrlMap] = useState<Record<string, eventWithTime[]>>({});
+  const [fileUidMap, setUidMap] = useState<Record<string, eventWithTime[]>>({});
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<InputRef>(null);
+
+  const setPanelEvents = useCallback(
+    (events: eventWithTime[], panelKey: OptionType) => {
+      if (panelKey !== opt) return;
+      setEvents(events);
+    },
+    [opt, setEvents]
+  );
 
   const setFileWithUid = (file: File, uid: string) => {
+    if (fileUidMap[uid]) {
+      setFileUid(uid);
+      return;
+    }
     readFile(file).then((content) => {
-      setEvents(JSON.parse(content));
+      setUidMap({ ...fileUidMap, [uid]: JSON.parse(content) });
+      setFileUid(uid);
     });
-    setFileUid(uid);
   };
 
   const loadUrl = (url: string) => {
@@ -73,18 +106,34 @@ function LeftPane() {
     if (!/^(http|https):\/\//.test(url)) {
       message.error("请输入正确的链接地址");
       return;
+    } else if (urlMap[url]) {
+      setUrl(url);
+      return;
     }
+    setLoading(true);
     fetch(url)
       .then((res) => res.json())
       .then(
         (data) => {
-          setEvents(data);
+          setUrlMap({ ...urlMap, [url]: data });
+          setUrl(url);
         },
         () => {
           message.error("加载失败");
         }
-      );
+      )
+      .finally(() => {
+        setLoading(false);
+      });
   };
+
+  useEffect(() => {
+    if (opt === "file") {
+      setPanelEvents(fileUidMap[fileUid || ""] || [], opt);
+    } else {
+      setPanelEvents(urlMap[url] || [], opt);
+    }
+  }, [url, urlMap, opt, fileUidMap, fileUid, setPanelEvents]);
 
   return (
     <div className="p-4">
@@ -110,7 +159,9 @@ function LeftPane() {
                   onClick={() => {
                     setFileWithUid(file.originFileObj as File, file.uid);
                   }}
-                  className={classNames({ " ring-2": fileUid === file.uid })}
+                  className={classNames({
+                    " ring-2 cursor-pointer": fileUid === file.uid,
+                  })}
                 >
                   {node}
                 </div>
@@ -125,21 +176,37 @@ function LeftPane() {
         </div>
         <div className={classNames({ hidden: opt == "file" })}>
           <Space.Compact className="w-full">
-            <Input
-              placeholder="输入在线CDN地址"
-              onChange={(e) => {
-                setUrl(e.target.value);
-              }}
-            />
+            <Input placeholder="输入在线CDN地址" ref={inputRef} />
             <Button
               type="primary"
               onClick={() => {
-                loadUrl(url);
+                loadUrl(inputRef.current?.input?.value || "");
               }}
+              loading={loading}
             >
               加载
             </Button>
           </Space.Compact>
+          <div className="list mt-2">
+            {Object.keys(urlMap).map((key) => {
+              return (
+                <div
+                  key={key}
+                  onClick={() => {
+                    setUrl(key);
+                  }}
+                  className={classNames(
+                    "item px-2 py-1 hover:bg-slate-100 cursor-pointer transition-all text-slate-500 text-sm overflow-hidden whitespace text-ellipsis",
+                    {
+                      "!bg-slate-200": key === url,
+                    }
+                  )}
+                >
+                  {key}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -177,6 +244,23 @@ function Preview() {
   );
 }
 
+function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  return (
+    <div className="h-full flex justify-center items-center">
+      <Result
+        status="500"
+        title="rrweb 录制文件解析失败"
+        subTitle={error.message}
+        extra={
+          <Button type="primary" onClick={resetErrorBoundary}>
+            重置
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
 export default function RrwebPreview() {
   return (
     <StoreProvide>
@@ -197,7 +281,9 @@ export default function RrwebPreview() {
               <LeftPane />
             </Allotment.Pane>
             <Allotment.Pane minSize={500}>
-              <Preview />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <Preview />
+              </ErrorBoundary>
             </Allotment.Pane>
           </Allotment>
         </div>
